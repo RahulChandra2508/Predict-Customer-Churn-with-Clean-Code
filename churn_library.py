@@ -2,9 +2,23 @@
 
 
 # import libraries
+from sklearn.metrics import plot_roc_curve, classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import normalize
 import os
-os.environ['QT_QPA_PLATFORM']='offscreen'
+import shap
+import joblib
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
 
+
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
 
 def import_data(pth):
@@ -15,8 +29,10 @@ def import_data(pth):
             pth: a path to the csv
     output:
             df: pandas dataframe
-    '''	
-	pass
+    '''
+    bank_data_df = pd.read_csv(pth, index_col=0)
+    bank_data_df['Churn'] = bank_data_df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
+    return bank_data_df
 
 
 def perform_eda(df):
@@ -28,7 +44,7 @@ def perform_eda(df):
     output:
             None
     '''
-	pass
+    pass
 
 
 def encoder_helper(df, category_lst, response):
@@ -44,7 +60,15 @@ def encoder_helper(df, category_lst, response):
     output:
             df: pandas dataframe with new columns for
     '''
-    pass
+    bank_data_df = df.copy()
+    for var in category_lst:
+        cat_columns_list = []
+        gender_groups = bank_data_df.groupby(var).mean()['Churn']
+        for val in bank_data_df[var]:
+            cat_columns_list.append(gender_groups.loc[val])
+        bank_data_df[var+"_Churn"]= cat_columns_list
+
+    return bank_data_df
 
 
 def perform_feature_engineering(df, response):
@@ -59,6 +83,7 @@ def perform_feature_engineering(df, response):
               y_train: y training data
               y_test: y testing data
     '''
+
 
 def classification_report_image(y_train,
                                 y_test,
@@ -96,6 +121,7 @@ def feature_importance_plot(model, X_data, output_pth):
     '''
     pass
 
+
 def train_models(X_train, X_test, y_train, y_test):
     '''
     train, store model results: images + scores, and store models
@@ -108,3 +134,20 @@ def train_models(X_train, X_test, y_train, y_test):
               None
     '''
     pass
+
+cat_columns = [
+    'Gender',
+    'Education_Level',
+    'Marital_Status',
+    'Income_Category',
+    'Card_Category'                
+]
+
+if __name__ == "__main__":
+    df_ = import_data(pth="./data/bank_data.csv")
+    print(df_.shape)
+    print(df_.columns)
+    df = encoder_helper(df= df_, category_lst= [
+        'Gender','Education_Level','Marital_Status','Income_Category', 'Card_Category'], response= None)
+    print(df.shape)
+    print(df.columns)
