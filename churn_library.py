@@ -15,13 +15,39 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, quant_columns
 sns.set()
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
+def load_model_preds(pth_rfc, pth_lr) -> pd.Series:
+    '''
+    returns y_pred_train, y_pred_test for both the models RFC and LR 
+    input:
+            pth: a path to both the models
+    output:
+            series: y_pred_train, y_pred_test(Predictions for both train and test datacoind )
+    '''
+    # Loading the model
+    rfc_model = joblib.load('./models/rfc_model.pkl')
+    lr_model = joblib.load('./models/logistic_model.pkl')
+    # Loading the model
+    rfc_model = joblib.load(pth_rfc)
+    lr_model = joblib.load(pth_lr)
 
-def import_data(pth):
+
+    y_train_preds_rf = rfc_model.predict(X_train)
+    y_test_preds_rf = rfc_model.predict(X_test)
+
+    y_train_preds_lr = lr_model.predict(X_train)
+    y_test_preds_lr = lr_model.predict(X_test)
+
+    return y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
+
+
+def import_data(pth) -> pd.DataFrame:
     '''
     returns dataframe for the csv found at pth
 
@@ -31,7 +57,8 @@ def import_data(pth):
             df: pandas dataframe
     '''
     bank_data_df = pd.read_csv(pth, index_col=0)
-    bank_data_df['Churn'] = bank_data_df['Attrition_Flag'].apply(lambda val: 0 if val == "Existing Customer" else 1)
+    bank_data_df['Churn'] = bank_data_df['Attrition_Flag'].apply(
+        lambda val: 0 if val == "Existing Customer" else 1)
     return bank_data_df
 
 
@@ -47,7 +74,10 @@ def perform_eda(df):
     pass
 
 
-def encoder_helper(df, category_lst, response):
+def encoder_helper(
+        df: pd.DataFrame,
+        category_lst: list,
+        response = None, new_cols = keep_cols) -> pd.DataFrame:
     '''
     helper function to turn each categorical column into a new column with
     propotion of churn for each category - associated with cell 15 from the notebook
@@ -61,21 +91,25 @@ def encoder_helper(df, category_lst, response):
             df: pandas dataframe with new columns for
     '''
     bank_data_df = df.copy()
+    
     for var in category_lst:
         cat_columns_list = []
         gender_groups = bank_data_df.groupby(var).mean()['Churn']
         for val in bank_data_df[var]:
             cat_columns_list.append(gender_groups.loc[val])
-        bank_data_df[var+"_Churn"]= cat_columns_list
+        bank_data_df[var + "_Churn"] = cat_columns_list
+
+    bank_data_df = bank_data_df[new_cols]
 
     return bank_data_df
 
 
-def perform_feature_engineering(df, response):
+def perform_feature_engineering(df: pd.DataFrame, response: None):
     '''
     input:
               df: pandas dataframe
-              response: string of response name [optional argument that could be used for naming variables or index y column]
+              response: string of response name 
+              [optional argument that could be used for naming variables or index y column]
 
     output:
               X_train: X training data
@@ -83,6 +117,14 @@ def perform_feature_engineering(df, response):
               y_train: y training data
               y_test: y testing data
     '''
+    bank_data_df = df.copy()
+    y = bank_data_df.pop('Churn')
+    X = bank_data_df
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42)
+
+    return X_train, X_test, y_train, y_test
 
 
 def classification_report_image(y_train,
@@ -105,7 +147,26 @@ def classification_report_image(y_train,
     output:
              None
     '''
-    pass
+    
+    # Plotting the classification report by RFC
+    plt.rc('figure', figsize=(5, 5))
+    #plt.text(0.01, 0.05, str(model.summary()), {'fontsize': 12}) old approach
+    plt.text(0.01, 1.25, str('Random Forest Train'), {'fontsize': 10}, fontproperties = 'monospace')
+    plt.text(0.01, 0.05, str(classification_report(y_test, y_test_preds_rf)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.text(0.01, 0.6, str('Random Forest Test'), {'fontsize': 10}, fontproperties = 'monospace')
+    plt.text(0.01, 0.7, str(classification_report(y_train, y_train_preds_rf)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.axis('off')
+    plt.savefig("./images/classification_report_RFC.jpg")
+
+    # Plotting the classification report by LRC
+    plt.rc('figure', figsize=(5, 5))
+    plt.text(0.01, 1.25, str('Logistic Regression Train'), {'fontsize': 10}, fontproperties = 'monospace')
+    plt.text(0.01, 0.05, str(classification_report(y_train, y_train_preds_lr)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.text(0.01, 0.6, str('Logistic Regression Test'), {'fontsize': 10}, fontproperties = 'monospace')
+    plt.text(0.01, 0.7, str(classification_report(y_test, y_test_preds_lr)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.axis('off')
+    plt.savefig("./images/classification_report_LRC.jpg")
+
 
 
 def feature_importance_plot(model, X_data, output_pth):
@@ -135,19 +196,19 @@ def train_models(X_train, X_test, y_train, y_test):
     '''
     pass
 
-cat_columns = [
-    'Gender',
-    'Education_Level',
-    'Marital_Status',
-    'Income_Category',
-    'Card_Category'                
-]
-
 if __name__ == "__main__":
     df_ = import_data(pth="./data/bank_data.csv")
     print(df_.shape)
     print(df_.columns)
-    df = encoder_helper(df= df_, category_lst= [
-        'Gender','Education_Level','Marital_Status','Income_Category', 'Card_Category'], response= None)
-    print(df.shape)
-    print(df.columns)
+    df_1 = encoder_helper(df= df_, category_lst= cat_columns)
+    X_train, X_test, y_train, y_test = perform_feature_engineering(df= df_1, response= None)
+    y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
+        pth_rfc= rfc_model_path, pth_lr= lr_model_path)
+    classification_report_image(y_train, y_test, y_train_preds_lr, y_train_preds_rf, y_test_preds_lr,
+                                y_test_preds_rf)
+
+    # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+    # print(X_train)
+    # print(X_test)
+    # print(y_train)
+    # print(y_test)
