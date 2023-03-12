@@ -1,6 +1,7 @@
 rfc_model_path = './models/rfc_model.pkl'
 lr_model_path = './models/logistic_model.pkl'
 data_path = './data/bank_data.csv'
+feature_imp_path = './images/feature_importance.jpg'
 keep_cols = [
         'Customer_Age',
         'Dependent_count',

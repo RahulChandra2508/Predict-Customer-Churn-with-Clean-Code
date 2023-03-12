@@ -2,6 +2,7 @@
 
 
 # import libraries
+from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, quant_columns, feature_imp_path
 from sklearn.metrics import plot_roc_curve, classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -15,28 +16,23 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, quant_columns
 sns.set()
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
+
 def load_model_preds(pth_rfc, pth_lr) -> pd.Series:
     '''
-    returns y_pred_train, y_pred_test for both the models RFC and LR 
+    returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
             pth: a path to both the models
     output:
             series: y_pred_train, y_pred_test(Predictions for both train and test datacoind )
     '''
     # Loading the model
-    rfc_model = joblib.load('./models/rfc_model.pkl')
-    lr_model = joblib.load('./models/logistic_model.pkl')
-    # Loading the model
     rfc_model = joblib.load(pth_rfc)
     lr_model = joblib.load(pth_lr)
-
 
     y_train_preds_rf = rfc_model.predict(X_train)
     y_test_preds_rf = rfc_model.predict(X_test)
@@ -44,7 +40,7 @@ def load_model_preds(pth_rfc, pth_lr) -> pd.Series:
     y_train_preds_lr = lr_model.predict(X_train)
     y_test_preds_lr = lr_model.predict(X_test)
 
-    return y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
+    return rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
 
 
 def import_data(pth) -> pd.DataFrame:
@@ -77,7 +73,7 @@ def perform_eda(df):
 def encoder_helper(
         df: pd.DataFrame,
         category_lst: list,
-        response = None, new_cols = keep_cols) -> pd.DataFrame:
+        response=None, new_cols=keep_cols) -> pd.DataFrame:
     '''
     helper function to turn each categorical column into a new column with
     propotion of churn for each category - associated with cell 15 from the notebook
@@ -91,7 +87,7 @@ def encoder_helper(
             df: pandas dataframe with new columns for
     '''
     bank_data_df = df.copy()
-    
+
     for var in category_lst:
         cat_columns_list = []
         gender_groups = bank_data_df.groupby(var).mean()['Churn']
@@ -108,7 +104,7 @@ def perform_feature_engineering(df: pd.DataFrame, response: None):
     '''
     input:
               df: pandas dataframe
-              response: string of response name 
+              response: string of response name
               [optional argument that could be used for naming variables or index y column]
 
     output:
@@ -147,26 +143,33 @@ def classification_report_image(y_train,
     output:
              None
     '''
-    
+
     # Plotting the classification report by RFC
     plt.rc('figure', figsize=(5, 5))
-    #plt.text(0.01, 0.05, str(model.summary()), {'fontsize': 12}) old approach
-    plt.text(0.01, 1.25, str('Random Forest Train'), {'fontsize': 10}, fontproperties = 'monospace')
-    plt.text(0.01, 0.05, str(classification_report(y_test, y_test_preds_rf)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
-    plt.text(0.01, 0.6, str('Random Forest Test'), {'fontsize': 10}, fontproperties = 'monospace')
-    plt.text(0.01, 0.7, str(classification_report(y_train, y_train_preds_rf)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    # plt.text(0.01, 0.05, str(model.summary()), {'fontsize': 12}) old approach
+    plt.text(0.01, 1.25, str('Random Forest Train'), {
+             'fontsize': 10}, fontproperties='monospace')
+    plt.text(0.01, 0.05, str(classification_report(y_test, y_test_preds_rf)), {
+             'fontsize': 10}, fontproperties='monospace')  # approach improved by OP -> monospace!
+    plt.text(0.01, 0.6, str('Random Forest Test'), {
+             'fontsize': 10}, fontproperties='monospace')
+    plt.text(0.01, 0.7, str(classification_report(y_train, y_train_preds_rf)), {
+             'fontsize': 10}, fontproperties='monospace')  # approach improved by OP -> monospace!
     plt.axis('off')
     plt.savefig("./images/classification_report_RFC.jpg")
 
     # Plotting the classification report by LRC
     plt.rc('figure', figsize=(5, 5))
-    plt.text(0.01, 1.25, str('Logistic Regression Train'), {'fontsize': 10}, fontproperties = 'monospace')
-    plt.text(0.01, 0.05, str(classification_report(y_train, y_train_preds_lr)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
-    plt.text(0.01, 0.6, str('Logistic Regression Test'), {'fontsize': 10}, fontproperties = 'monospace')
-    plt.text(0.01, 0.7, str(classification_report(y_test, y_test_preds_lr)), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.text(0.01, 1.25, str('Logistic Regression Train'),
+             {'fontsize': 10}, fontproperties='monospace')
+    plt.text(0.01, 0.05, str(classification_report(y_train, y_train_preds_lr)), {
+             'fontsize': 10}, fontproperties='monospace')  # approach improved by OP -> monospace!
+    plt.text(0.01, 0.6, str('Logistic Regression Test'), {
+             'fontsize': 10}, fontproperties='monospace')
+    plt.text(0.01, 0.7, str(classification_report(y_test, y_test_preds_lr)), {
+             'fontsize': 10}, fontproperties='monospace')  # approach improved by OP -> monospace!
     plt.axis('off')
     plt.savefig("./images/classification_report_LRC.jpg")
-
 
 
 def feature_importance_plot(model, X_data, output_pth):
@@ -180,7 +183,33 @@ def feature_importance_plot(model, X_data, output_pth):
     output:
              None
     '''
-    pass
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X_data)
+    shap.summary_plot(shap_values, X_test, plot_type="bar")
+
+    # Calculate feature importances
+    importances = model.feature_importances_
+    # Sort feature importances in descending order
+    indices = np.argsort(importances)[::-1]
+
+    # Rearrange feature names so they match the sorted feature importances
+    names = [X_data.columns[i] for i in indices]
+
+    # Create plot
+    plt.figure(figsize=(20,5))
+
+    # Create plot title
+    plt.title("Feature Importance")
+    plt.ylabel('Importance')
+
+    # Add bars
+    plt.bar(range(X.shape[1]), importances[indices])
+
+    # Add feature names as x-axis labels
+    plt.xticks(range(X.shape[1]), names, rotation=90);
+
+    # saving the plot
+    plt.savefig(output_pth)
 
 
 def train_models(X_train, X_test, y_train, y_test):
@@ -196,16 +225,23 @@ def train_models(X_train, X_test, y_train, y_test):
     '''
     pass
 
+
 if __name__ == "__main__":
     df_ = import_data(pth="./data/bank_data.csv")
     print(df_.shape)
     print(df_.columns)
-    df_1 = encoder_helper(df= df_, category_lst= cat_columns)
-    X_train, X_test, y_train, y_test = perform_feature_engineering(df= df_1, response= None)
-    y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
-        pth_rfc= rfc_model_path, pth_lr= lr_model_path)
-    classification_report_image(y_train, y_test, y_train_preds_lr, y_train_preds_rf, y_test_preds_lr,
-                                y_test_preds_rf)
+    df_1 = encoder_helper(df=df_, category_lst=cat_columns)
+    X_train, X_test, y_train, y_test = perform_feature_engineering(
+        df=df_1, response=None)
+    rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
+        pth_rfc=rfc_model_path, pth_lr=lr_model_path)
+    classification_report_image(
+        y_train,
+        y_test,
+        y_train_preds_lr,
+        y_train_preds_rf,
+        y_test_preds_lr,
+        y_test_preds_rf)
 
     # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
     # print(X_train)
