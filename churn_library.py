@@ -2,6 +2,7 @@
 
 
 # import libraries
+from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, feature_imp_path
 import os
 
 from sklearn.metrics import plot_roc_curve, classification_report
@@ -18,9 +19,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
-
-from constant import rfc_model_path, lr_model_path, data_path \
-                     , keep_cols, cat_columns,  feature_imp_path
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
@@ -41,7 +39,11 @@ def load_model(pth_rfc, pth_lr) -> pd.Series:
     return rfc_model, lr_model
 
 
-def predict_values(forest_model, linear_model, X_data_train: pd.DataFrame, X_data_test: pd.DataFrame):
+def predict_values(
+        forest_model,
+        linear_model,
+        X_data_train: pd.DataFrame,
+        X_data_test: pd.DataFrame):
     '''
     returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
@@ -120,7 +122,7 @@ def encoder_helper(
     input:
             df: pandas dataframe
             category_lst: list of columns that contain categorical features
-            response: string of response name 
+            response: string of response name
             [optional argument that could be used for naming variables or index y column]
 
     output:
@@ -140,8 +142,8 @@ def encoder_helper(
 
 def perform_feature_engineering(
         dataframe: pd.DataFrame,
-        response = None,
-        new_cols: list = keep_cols):
+        new_cols: list,
+        response=None,):
     '''
     input:
               df: pandas dataframe
@@ -315,11 +317,12 @@ def train_models(X_train, X_test, y_train, y_test):
     plt.savefig('./images/results/roc_curve.jpg')
 
 
-# if __name__ == "__main__":
-#     df_ = import_data(pth="./data/bank_data.csv")
-#     print(df_.shape)
-#     print(df_.columns)
-#     df_1 = encoder_helper(df=df_, category_lst=cat_columns)
+if __name__ == "__main__":
+    df_ = import_data(pth="./data/bank_data.csv")
+    print(df_.shape)
+    # print(df_.columns)
+    df_1 = encoder_helper(dataframe=df_, category_lst=cat_columns)
+    print(df_1.shape)
 #     perform_eda(df=df_1)
 #     X_train, X_test, y_train, y_test = perform_feature_engineering(
 #         df=df_1, response=None)
