@@ -2,14 +2,15 @@
 
 
 # import libraries
+import os
+
 from sklearn.metrics import plot_roc_curve, classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import normalize
-from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, quant_columns, feature_imp_path
-import os
+# from sklearn.preprocessing import normalize
+
 import shap
 import joblib
 import pandas as pd
@@ -18,11 +19,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
+from constant import rfc_model_path, lr_model_path, data_path \
+                     , keep_cols, cat_columns,  feature_imp_path
+
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
 
-def load_model_preds(pth_rfc, pth_lr) -> pd.Series:
+def load_model(pth_rfc, pth_lr) -> pd.Series:
+    '''
+    returns both the models RFC and LR
+    input:
+            pth: a path to both the models
+    output:
+            series: random_forest_model, linear_model(logistic regression)
+    '''
+    # Loading the model
+    rfc_model = joblib.load(pth_rfc)
+    lr_model = joblib.load(pth_lr)
+
+    return rfc_model, lr_model
+
+
+def predict_values(forest_model, linear_model, X_data_train: pd.DataFrame, X_data_test: pd.DataFrame):
     '''
     returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
@@ -30,17 +49,13 @@ def load_model_preds(pth_rfc, pth_lr) -> pd.Series:
     output:
             series: y_pred_train, y_pred_test(Predictions for both train and test datacoind )
     '''
-    # Loading the model
-    rfc_model = joblib.load(pth_rfc)
-    lr_model = joblib.load(pth_lr)
+    y_train_preds_rf = forest_model.predict(X_data_train)
+    y_test_preds_rf = forest_model.predict(X_data_test)
 
-    y_train_preds_rf = rfc_model.predict(X_train)
-    y_test_preds_rf = rfc_model.predict(X_test)
+    y_train_preds_lr = linear_model.predict(X_data_train)
+    y_test_preds_lr = linear_model.predict(X_data_test)
 
-    y_train_preds_lr = lr_model.predict(X_train)
-    y_test_preds_lr = lr_model.predict(X_test)
-
-    return rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
+    return y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
 
 
 def import_data(pth) -> pd.DataFrame:
@@ -58,7 +73,7 @@ def import_data(pth) -> pd.DataFrame:
     return bank_data_df
 
 
-def perform_eda(df):
+def perform_eda(dataframe):
     '''
     perform eda on df and save figures to images folder
     input:
@@ -67,35 +82,35 @@ def perform_eda(df):
     output:
             None
     '''
-    bank_data_df = df.copy()
+    bank_data_df = dataframe.copy()
 
     # EDA for the attributes Churn, Customer_Age
     for var in ['Churn', 'Customer_Age']:
-        plt.figure(figsize=(20,10))
-        plt.xlabel(xlabel= var)
-        plt.ylabel(ylabel= "Frequency")
+        plt.figure(figsize=(20, 10))
+        plt.xlabel(xlabel=var)
+        plt.ylabel(ylabel="Frequency")
         plt.title(f'This is a plot showing Histogram for {var}')
         bank_data_df[var].hist()
         plt.savefig(f'./images/eda/{var}_EDA.jpg')
 
     # EDA for Marital Status
-    plt.figure(figsize=(20,10)) 
+    plt.figure(figsize=(20, 10))
     bank_data_df.Marital_Status.value_counts('normalize').plot(kind='bar')
     plt.savefig('./images/eda/Marital_Status_EDA.jpg')
 
     # EDA of 'Total_Trans_Ct'
-    plt.figure(figsize=(20,10)) 
+    plt.figure(figsize=(20, 10))
     sns.histplot(bank_data_df['Total_Trans_Ct'], stat='density', kde=True)
     plt.savefig('./images/eda/Total_Trans_Ct_EDA.jpg')
 
     # EDA (Heat Map)
-    plt.figure(figsize=(20,10)) 
-    sns.heatmap(bank_data_df.corr(), annot=False, cmap='Dark2_r', linewidths = 2)
+    plt.figure(figsize=(20, 10))
+    sns.heatmap(bank_data_df.corr(), annot=False, cmap='Dark2_r', linewidths=2)
     plt.savefig('./images/eda/Heat_Map.jpg')
 
 
 def encoder_helper(
-        df: pd.DataFrame,
+        dataframe: pd.DataFrame,
         category_lst: list,
         response=None) -> pd.DataFrame:
     '''
@@ -105,12 +120,13 @@ def encoder_helper(
     input:
             df: pandas dataframe
             category_lst: list of columns that contain categorical features
-            response: string of response name [optional argument that could be used for naming variables or index y column]
+            response: string of response name 
+            [optional argument that could be used for naming variables or index y column]
 
     output:
             df: pandas dataframe with new columns for
     '''
-    bank_data_df = df.copy()
+    bank_data_df = dataframe.copy()
 
     for var in category_lst:
         cat_columns_list = []
@@ -122,7 +138,10 @@ def encoder_helper(
     return bank_data_df
 
 
-def perform_feature_engineering(df: pd.DataFrame, response: None , new_cols: list =keep_cols):
+def perform_feature_engineering(
+        dataframe: pd.DataFrame,
+        response = None,
+        new_cols: list = keep_cols):
     '''
     input:
               df: pandas dataframe
@@ -135,12 +154,12 @@ def perform_feature_engineering(df: pd.DataFrame, response: None , new_cols: lis
               y_train: y training data
               y_test: y testing data
     '''
-    bank_data_df = df.copy()
-    y = bank_data_df.pop('Churn')
-    X = bank_data_df[new_cols]
+    bank_data_df = dataframe.copy()
+    target_col = bank_data_df.pop('Churn')
+    X_data = bank_data_df[new_cols]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42)
+        X_data, target_col, test_size=0.3, random_state=42)
 
     return X_train, X_test, y_train, y_test
 
@@ -193,14 +212,20 @@ def classification_report_image(y_train,
     plt.axis('off')
     plt.savefig("./images/results/classification_report_LRC.jpg")
 
-def roc_plot(model_lr, model_rfc, X_test_data: pd.DataFrame, y_test_data: pd.Series):
-    # Model evaluation using the saved models.
-    lrc_plot = plot_roc_curve(model_lr, X_test_data, y_test_data)
-    plt.figure(figsize=(15, 8))
-    ax = plt.gca()
-    plot_roc_curve(model_rfc, X_test_data, y_test_data, ax=ax, alpha=0.8)
-    lrc_plot.plot(ax=ax, alpha=0.8)
-    plt.savefig('./images/results/roc_curve.jpg')
+
+# def roc_plot(
+#         model_lr,
+#         model_rfc,
+#         X_test_data: pd.DataFrame,
+#         y_test_data: pd.Series):
+#     # Model evaluation using the saved models.
+#     lrc_plot = plot_roc_curve(model_lr, X_test_data, y_test_data)
+#     plt.figure(figsize=(15, 8))
+#     ax = plt.gca()
+#     plot_roc_curve(model_rfc, X_test_data, y_test_data, ax=ax, alpha=0.8)
+#     lrc_plot.plot(ax=ax, alpha=0.8)
+#     plt.savefig('./images/results/roc_curve.jpg')
+
 
 def feature_importance_plot(model, X_data, output_pth):
     '''
@@ -226,7 +251,7 @@ def feature_importance_plot(model, X_data, output_pth):
     names = [X_data.columns[i] for i in indices]
 
     # Create plot
-    plt.figure(figsize=(20,5))
+    plt.figure(figsize=(20, 5))
 
     # Create plot title
     plt.title("Feature Importance")
@@ -257,14 +282,15 @@ def train_models(X_train, X_test, y_train, y_test):
     # Initializing the Models
     rfc = RandomForestClassifier(random_state=42)
     # Use a different solver if the default 'lbfgs' fails to converge
-    # Reference: https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
+    # Reference:
+    # https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
     lrc = LogisticRegression(solver='lbfgs', max_iter=3000)
 
-    param_grid = { 
-    'n_estimators': [200, 500],
-    'max_features': ['auto', 'sqrt'],
-    'max_depth' : [4,5,100],
-    'criterion' :['gini', 'entropy']
+    param_grid = {
+        'n_estimators': [200, 500],
+        'max_features': ['auto', 'sqrt'],
+        'max_depth': [4, 5, 100],
+        'criterion': ['gini', 'entropy']
     }
     # Training the models
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
@@ -272,7 +298,7 @@ def train_models(X_train, X_test, y_train, y_test):
 
     lrc.fit(X_train, y_train)
 
-    #saving the models trianed
+    # saving the models trianed
     joblib.dump(cv_rfc.best_estimator_, './models/rfc_model.pkl')
     joblib.dump(lrc, './models/logistic_model.pkl')
 
@@ -289,23 +315,23 @@ def train_models(X_train, X_test, y_train, y_test):
     plt.savefig('./images/results/roc_curve.jpg')
 
 
-if __name__ == "__main__":
-    df_ = import_data(pth="./data/bank_data.csv")
-    print(df_.shape)
-    print(df_.columns)
-    df_1 = encoder_helper(df=df_, category_lst=cat_columns)
-    perform_eda(df = df_1)
-    X_train, X_test, y_train, y_test = perform_feature_engineering(
-        df=df_1, response=None)
-    rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
-        pth_rfc=rfc_model_path, pth_lr=lr_model_path)
-    classification_report_image(
-        y_train,
-        y_test,
-        y_train_preds_lr,
-        y_train_preds_rf,
-        y_test_preds_lr,
-        y_test_preds_rf)
+# if __name__ == "__main__":
+#     df_ = import_data(pth="./data/bank_data.csv")
+#     print(df_.shape)
+#     print(df_.columns)
+#     df_1 = encoder_helper(df=df_, category_lst=cat_columns)
+#     perform_eda(df=df_1)
+#     X_train, X_test, y_train, y_test = perform_feature_engineering(
+#         df=df_1, response=None)
+#     rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
+#         pth_rfc=rfc_model_path, pth_lr=lr_model_path)
+#     classification_report_image(
+#         y_train,
+#         y_test,
+#         y_train_preds_lr,
+#         y_train_preds_rf,
+#         y_test_preds_lr,
+#         y_test_preds_rf)
     # feature_importance_plot(model= rfc_model, X_data= X_test, output_pth= feature_imp_path)
     # train_models(X_train, X_test, y_train, y_test)
     # roc_plot(
