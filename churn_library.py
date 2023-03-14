@@ -306,8 +306,8 @@ if __name__ == "__main__":
         y_train_preds_rf,
         y_test_preds_lr,
         y_test_preds_rf)
-    feature_importance_plot(model= rfc_model, X_data= X_test, output_pth= feature_imp_path)
-    train_models(X_train, X_test, y_train, y_test)
+    # feature_importance_plot(model= rfc_model, X_data= X_test, output_pth= feature_imp_path)
+    # train_models(X_train, X_test, y_train, y_test)
     # roc_plot(
     #          lr_model,
     #          rfc_model,
