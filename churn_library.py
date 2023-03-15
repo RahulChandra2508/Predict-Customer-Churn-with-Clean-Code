@@ -6,14 +6,18 @@ Date of Modification: 15-03-2023
 
 Description:
 Churn_library files contains the functions that are used in conjunction
-to have al the preprocessing and training the model which is used 
+to have al the preprocessing and training the model which is used
 to predict the churn.
 
 Below are the functions used.
 
 -> load_model(pth_rfc, pth_lr) -> pd.Series
 
--> predict_values(forest_model, linear_model, X_data_train: pd.DataFrame, X_data_test: pd.DataFrame)-> pd.Series
+-> predict_values(
+        forest_model, 
+        linear_model, 
+        X_data_train: pd.DataFrame, 
+        X_data_test: pd.DataFrame)-> pd.Series
 
 -> import_data(pth) -> pd.DataFrame
 
@@ -33,7 +37,7 @@ Below are the functions used.
                                 y_test,
                                 y_train_preds_lr,
                                 y_train_preds_rf,
-                   y_test_preds_lr,
+                                y_test_preds_lr,
                                 y_test_preds_rf)
 
 -> feature_importance_plot(model, X_data, output_pth)
@@ -57,8 +61,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
-from constant import rfc_model_path, lr_model_path, data_path \
-                     , keep_cols, cat_columns,  feature_imp_path
+# from constant import rfc_model_path, lr_model_path, data_path \
+#                      , keep_cols, cat_columns,  feature_imp_path
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
@@ -82,8 +86,8 @@ def load_model(pth_rfc, pth_lr) -> pd.Series:
 def predict_values(
         forest_model,
         linear_model, 
-        X_data_train: pd.DataFrame, 
-        X_data_test: pd.DataFrame)-> pd.Series:
+        x_data_train: pd.DataFrame, 
+        x_data_test: pd.DataFrame)-> pd.Series:
     '''
     returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
@@ -91,11 +95,11 @@ def predict_values(
     output:
             series: y_pred_train, y_pred_test(Predictions for both train and test datacoind )
     '''
-    y_train_preds_rf = forest_model.predict(X_data_train)
-    y_test_preds_rf = forest_model.predict(X_data_test)
+    y_train_preds_rf = forest_model.predict(x_data_train)
+    y_test_preds_rf = forest_model.predict(x_data_test)
 
-    y_train_preds_lr = linear_model.predict(X_data_train)
-    y_test_preds_lr = linear_model.predict(X_data_test)
+    y_train_preds_lr = linear_model.predict(x_data_train)
+    y_test_preds_lr = linear_model.predict(x_data_test)
 
     return y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr
 
@@ -187,6 +191,8 @@ def perform_feature_engineering(
     '''
     input:
               df: pandas dataframe
+              new_cols: Finals columns used in the dataframe after performing
+              feature engineering
               response: string of response name
               [optional argument that could be used for naming variables or index y column]
 
@@ -198,12 +204,12 @@ def perform_feature_engineering(
     '''
     bank_data_df = dataframe.copy()
     target_col = bank_data_df.pop('Churn')
-    X_data = bank_data_df[new_cols]
+    x_data = bank_data_df[new_cols]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_data, target_col, test_size=0.3, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x_data, target_col, test_size=0.3, random_state=42)
 
-    return X_train, X_test, y_train, y_test
+    return x_train, x_test, y_train, y_test
 
 
 def classification_report_image(y_train,
@@ -255,7 +261,7 @@ def classification_report_image(y_train,
     plt.savefig("./images/results/classification_report_LRC.jpg")
 
 
-def feature_importance_plot(model, X_data, output_pth)-> None:
+def feature_importance_plot(model, x_data, output_pth)-> None:
     '''
     creates and stores the feature importances in pth
     input:
@@ -267,8 +273,8 @@ def feature_importance_plot(model, X_data, output_pth)-> None:
              None
     '''
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_data)
-    shap.summary_plot(shap_values, X_data, plot_type="bar")
+    shap_values = explainer.shap_values(x_data)
+    shap.summary_plot(shap_values, x_data, plot_type="bar")
 
     # Calculate feature importances
     importances = model.feature_importances_
@@ -276,7 +282,7 @@ def feature_importance_plot(model, X_data, output_pth)-> None:
     indices = np.argsort(importances)[::-1]
 
     # Rearrange feature names so they match the sorted feature importances
-    names = [X_data.columns[i] for i in indices]
+    names = [x_data.columns[i] for i in indices]
 
     # Create plot
     plt.figure(figsize=(20, 5))
@@ -286,16 +292,16 @@ def feature_importance_plot(model, X_data, output_pth)-> None:
     plt.ylabel('Importance')
 
     # Add bars
-    plt.bar(range(X_data.shape[1]), importances[indices])
+    plt.bar(range(x_data.shape[1]), importances[indices])
 
     # Add feature names as x-axis labels
-    plt.xticks(range(X_data.shape[1]), names, rotation=90)
+    plt.xticks(range(x_data.shape[1]), names, rotation=90)
 
     # saving the plot
     plt.savefig(output_pth)
 
 
-def train_models(X_train, X_test, y_train, y_test)-> None:
+def train_models(x_train, x_test, y_train, y_test)-> None:
     '''
     train, store model results: images + scores, and store models
     input:
@@ -322,9 +328,9 @@ def train_models(X_train, X_test, y_train, y_test)-> None:
     }
     # Training the models
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
-    cv_rfc.fit(X_train, y_train)
+    cv_rfc.fit(x_train, y_train)
 
-    lrc.fit(X_train, y_train)
+    lrc.fit(x_train, y_train)
 
     # saving the models trianed
     joblib.dump(cv_rfc.best_estimator_, './models/rfc_model.pkl')
@@ -335,41 +341,9 @@ def train_models(X_train, X_test, y_train, y_test)-> None:
     lr_model = joblib.load('./models/logistic_model.pkl')
 
     # Model evaluation using the saved models.
-    lrc_plot = plot_roc_curve(lr_model, X_test, y_test)
+    lrc_plot = plot_roc_curve(lr_model, x_test, y_test)
     plt.figure(figsize=(15, 8))
-    ax = plt.gca()
-    plot_roc_curve(rfc_model, X_test, y_test, ax=ax, alpha=0.8)
-    lrc_plot.plot(ax=ax, alpha=0.8)
+    axis = plt.gca()
+    plot_roc_curve(rfc_model, x_test, y_test, ax=axis, alpha=0.8)
+    lrc_plot.plot(ax=axis, alpha=0.8)
     plt.savefig('./images/results/roc_curve.jpg')
-
-
-if __name__ == "__main__":
-    df_ = import_data(pth="./data/bank_data.csv")
-    print(df_.shape)
-    # print(df_.columns)
-    df_1 = encoder_helper(dataframe=df_, category_lst=cat_columns)
-    print(df_1.shape)
-#     perform_eda(df=df_1)
-#     X_train, X_test, y_train, y_test = perform_feature_engineering(
-#         df=df_1, response=None)
-#     rfc_model, lr_model, y_train_preds_rf, y_train_preds_lr, y_test_preds_rf, y_test_preds_lr = load_model_preds(
-#         pth_rfc=rfc_model_path, pth_lr=lr_model_path)
-#     classification_report_image(
-#         y_train,
-#         y_test,
-#         y_train_preds_lr,
-#         y_train_preds_rf,
-#         y_test_preds_lr,
-#         y_test_preds_rf)
-    # feature_importance_plot(model= rfc_model, X_data= X_test, output_pth= feature_imp_path)
-    # train_models(X_train, X_test, y_train, y_test)
-    # roc_plot(
-    #          lr_model,
-    #          rfc_model,
-    #          X_test,
-    #          y_test)
-    # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-    # print(X_train)
-    # print(X_test)
-    # print(y_train)
-    # print(y_test)
