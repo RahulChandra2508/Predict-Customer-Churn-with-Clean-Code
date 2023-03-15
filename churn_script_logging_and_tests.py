@@ -11,7 +11,7 @@ credit card customers.
 
 import os
 import logging
-import churn_library_solution as cls
+import churn_library as cls
 from constant import cat_columns, keep_cols
 
 logging.basicConfig(
@@ -129,4 +129,4 @@ def test_train_models(train_models, perform_feature_engineering, import_data):
 
 
 if __name__ == "__main__":
-    pass
+    test_encoder_helper(cls.encoder_helper, cls.import_data)

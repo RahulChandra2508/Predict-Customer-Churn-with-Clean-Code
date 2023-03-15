@@ -1,0 +1,4 @@
+root - INFO - Testing import_data: SUCCESS
+root - INFO - Testing import_data: The file has data within it.
+root - INFO - Testing encoder_helper: SUCCESS
+root - INFO - Testing encoder_helper: The transformed data looks good
