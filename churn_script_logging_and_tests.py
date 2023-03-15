@@ -5,7 +5,8 @@ Date of Modification: 15-03-2023
 
 Description:
 churn_script_logging_and _tests files contains the test functions that are used to
-test the functions
+test the functions within the churn_library which is used to predict the churn of
+credit card customers.
 '''
 
 import os
