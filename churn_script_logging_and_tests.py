@@ -2,6 +2,7 @@ import os
 import logging
 from constant import cat_columns, keep_cols
 import churn_library_solution as cls
+from chrun_library import import_data
 
 logging.basicConfig(
     filename='./logs/churn_library.log',

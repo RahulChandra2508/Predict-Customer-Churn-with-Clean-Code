@@ -1,5 +1,43 @@
 # library doc string
+'''
+Author: Rahul
 
+Date of Modification: 15-03-2023
+
+Description:
+Churn_library files contains the functions that are used in conjunction
+to have al the preprocessing and training the model which is used 
+to predict the churn.
+
+Below are the functions used.
+
+-> load_model(pth_rfc, pth_lr) -> pd.Series
+
+-> predict_values(forest_model, linear_model, X_data_train: pd.DataFrame, X_data_test: pd.DataFrame)-> pd.Series
+
+-> import_data(pth) -> pd.DataFrame
+
+-> perform_eda(dataframe)
+
+-> encoder_helper(
+        dataframe: pd.DataFrame,
+        category_lst: list,
+        response=None) -> pd.DataFrame
+
+-> perform_feature_engineering(
+        dataframe: pd.DataFrame,
+        new_cols: list,
+        response = None)
+
+-> classification_report_image(y_train,
+                                y_test,
+                                y_train_preds_lr,
+                                y_train_preds_rf,
+                   y_test_preds_lr,
+                                y_test_preds_rf)
+
+-> feature_importance_plot(model, X_data, output_pth)
+'''
 
 # import libraries
 import os
@@ -41,7 +79,11 @@ def load_model(pth_rfc, pth_lr) -> pd.Series:
     return rfc_model, lr_model
 
 
-def predict_values(forest_model, linear_model, X_data_train: pd.DataFrame, X_data_test: pd.DataFrame):
+def predict_values(
+        forest_model,
+        linear_model, 
+        X_data_train: pd.DataFrame, 
+        X_data_test: pd.DataFrame)-> pd.Series:
     '''
     returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
@@ -73,7 +115,7 @@ def import_data(pth) -> pd.DataFrame:
     return bank_data_df
 
 
-def perform_eda(dataframe):
+def perform_eda(dataframe)-> None:
     '''
     perform eda on df and save figures to images folder
     input:
@@ -112,7 +154,7 @@ def perform_eda(dataframe):
 def encoder_helper(
         dataframe: pd.DataFrame,
         category_lst: list,
-        response=None) -> pd.DataFrame:
+        response=None)-> pd.DataFrame:
     '''
     helper function to turn each categorical column into a new column with
     propotion of churn for each category - associated with cell 15 from the notebook
@@ -141,7 +183,7 @@ def encoder_helper(
 def perform_feature_engineering(
         dataframe: pd.DataFrame,
         new_cols: list,
-        response = None):
+        response = None)-> pd.DataFrame:
     '''
     input:
               df: pandas dataframe
@@ -169,7 +211,7 @@ def classification_report_image(y_train,
                                 y_train_preds_lr,
                                 y_train_preds_rf,
                                 y_test_preds_lr,
-                                y_test_preds_rf):
+                                y_test_preds_rf)-> None:
     '''
     produces classification report for training and testing results and stores report as image
     in images folder
@@ -213,21 +255,7 @@ def classification_report_image(y_train,
     plt.savefig("./images/results/classification_report_LRC.jpg")
 
 
-# def roc_plot(
-#         model_lr,
-#         model_rfc,
-#         X_test_data: pd.DataFrame,
-#         y_test_data: pd.Series):
-#     # Model evaluation using the saved models.
-#     lrc_plot = plot_roc_curve(model_lr, X_test_data, y_test_data)
-#     plt.figure(figsize=(15, 8))
-#     ax = plt.gca()
-#     plot_roc_curve(model_rfc, X_test_data, y_test_data, ax=ax, alpha=0.8)
-#     lrc_plot.plot(ax=ax, alpha=0.8)
-#     plt.savefig('./images/results/roc_curve.jpg')
-
-
-def feature_importance_plot(model, X_data, output_pth):
+def feature_importance_plot(model, X_data, output_pth)-> None:
     '''
     creates and stores the feature importances in pth
     input:
@@ -267,7 +295,7 @@ def feature_importance_plot(model, X_data, output_pth):
     plt.savefig(output_pth)
 
 
-def train_models(X_train, X_test, y_train, y_test):
+def train_models(X_train, X_test, y_train, y_test)-> None:
     '''
     train, store model results: images + scores, and store models
     input:
