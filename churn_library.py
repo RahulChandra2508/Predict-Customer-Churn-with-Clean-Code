@@ -44,6 +44,7 @@ Below are the functions used.
 '''
 
 # import libraries
+from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, feature_imp_path
 import os
 
 from sklearn.metrics import plot_roc_curve, classification_report
@@ -60,10 +61,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
-
-# from constant import rfc_model_path, lr_model_path, data_path \
-#                      , keep_cols, cat_columns,  feature_imp_path
-
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -85,9 +82,9 @@ def load_model(pth_rfc, pth_lr) -> pd.Series:
 
 def predict_values(
         forest_model,
-        linear_model, 
-        x_data_train: pd.DataFrame, 
-        x_data_test: pd.DataFrame)-> pd.Series:
+        linear_model,
+        x_data_train: pd.DataFrame,
+        x_data_test: pd.DataFrame) -> pd.Series:
     '''
     returns y_pred_train, y_pred_test for both the models RFC and LR
     input:
@@ -119,7 +116,7 @@ def import_data(pth) -> pd.DataFrame:
     return bank_data_df
 
 
-def perform_eda(dataframe)-> None:
+def perform_eda(dataframe) -> None:
     '''
     perform eda on df and save figures to images folder
     input:
@@ -158,7 +155,7 @@ def perform_eda(dataframe)-> None:
 def encoder_helper(
         dataframe: pd.DataFrame,
         category_lst: list,
-        response=None)-> pd.DataFrame:
+        response=None) -> pd.DataFrame:
     '''
     helper function to turn each categorical column into a new column with
     propotion of churn for each category - associated with cell 15 from the notebook
@@ -187,7 +184,7 @@ def encoder_helper(
 def perform_feature_engineering(
         dataframe: pd.DataFrame,
         new_cols: list,
-        response = None)-> pd.DataFrame:
+        response=None) -> pd.DataFrame:
     '''
     input:
               df: pandas dataframe
@@ -217,7 +214,7 @@ def classification_report_image(y_train,
                                 y_train_preds_lr,
                                 y_train_preds_rf,
                                 y_test_preds_lr,
-                                y_test_preds_rf)-> None:
+                                y_test_preds_rf) -> None:
     '''
     produces classification report for training and testing results and stores report as image
     in images folder
@@ -261,7 +258,7 @@ def classification_report_image(y_train,
     plt.savefig("./images/results/classification_report_LRC.jpg")
 
 
-def feature_importance_plot(model, x_data, output_pth)-> None:
+def feature_importance_plot(model, x_data, output_pth) -> None:
     '''
     creates and stores the feature importances in pth
     input:
@@ -301,7 +298,7 @@ def feature_importance_plot(model, x_data, output_pth)-> None:
     plt.savefig(output_pth)
 
 
-def train_models(x_train, x_test, y_train, y_test)-> None:
+def train_models(x_train, x_test, y_train, y_test) -> None:
     '''
     train, store model results: images + scores, and store models
     input:
@@ -347,3 +344,37 @@ def train_models(x_train, x_test, y_train, y_test)-> None:
     plot_roc_curve(rfc_model, x_test, y_test, ax=axis, alpha=0.8)
     lrc_plot.plot(ax=axis, alpha=0.8)
     plt.savefig('./images/results/roc_curve.jpg')
+
+
+if __name__ == "__main__":
+
+    bank_data_dataframe = import_data(data_path)
+
+    random_forest_model, log_reg_model = load_model(
+        rfc_model_path, lr_model_path)
+
+    encoded_dataframe = encoder_helper(bank_data_dataframe,
+                                       cat_columns,
+                                       response=None)
+
+    X_train, X_test, y_train, y_test = perform_feature_engineering(encoded_dataframe,
+                                                                   keep_cols,
+                                                                   response=None)
+
+    y_train_preds_rfc, y_train_preds_lrc, y_test_preds_rfc, y_test_preds_lrc = predict_values(random_forest_model,
+                                                                                              log_reg_model,
+                                                                                              X_train,
+                                                                                              X_test)
+
+
+perform_eda(encoded_dataframe)
+
+
+classification_report_image(y_train,
+                            y_test,
+                            y_train_preds_lrc,
+                            y_train_preds_rfc,
+                            y_test_preds_lrc,
+                            y_test_preds_rfc)
+
+feature_importance_plot(random_forest_model, X_test, feature_imp_path)
