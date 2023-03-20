@@ -9,6 +9,12 @@ Python package for a machine learning project that follows coding (PEP8) and eng
 best practices for implementing software (modular, documented, and tested). 
 The package will also have the flexibility of being run interactively or from the command-line interface (CLI).
 
+### setting up the project
+    Before we execute the projecv we need to set the environment.
+    We can do this by installing all the required libraries using requirements.txt.
+    "pip install -r requirements_py36.txt" for python version 3.6
+    "pip install -r requirements_py36.txt" for python version 3.8
+
 ## Files and data description
 # churn_library:
 churn_library files contains the functions that are used in conjunction

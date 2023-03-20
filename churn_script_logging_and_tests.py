@@ -10,6 +10,7 @@ credit card customers.
 '''
 
 import os
+import pytest
 import logging
 import churn_library as cls
 from constant import cat_columns, keep_cols
@@ -17,8 +18,15 @@ from constant import cat_columns, keep_cols
 logging.basicConfig(
     filename='./logs/churn_library.log',
     level=logging.INFO,
-    filemode='w',
+    filemode='w+',
     format='%(name)s - %(levelname)s - %(message)s')
+
+## unable to fixture so went into calling the import in every function.
+# @pytest.fixture 
+# def import_data_df():
+#     dataframe =  cls.import_data("./data/bank_data.csv")
+#     logging.info("import_data: SUCCESS")
+#     return dataframe
 
 
 def test_import(import_data):
@@ -58,13 +66,13 @@ def test_eda(perform_eda, import_data):
         raise err
 
 
-def test_encoder_helper(encoder_helper, import_data):
+def test_encoder_helper(encoder_helper, import_data, cat_vars):
     '''
     test encoder helper
     '''
     try:
-        dataframe = import_data('./data/bank_data.csv')
-        dataframe_transformed = encoder_helper(dataframe, cat_columns)
+        dataframe = import_data("./data/bank_data.csv")
+        dataframe_transformed = encoder_helper(dataframe, cat_vars)
         assert dataframe_transformed.shape[1] == 27
         logging.info("Testing encoder_helper: SUCCESS")
     except AssertionError as err:
@@ -82,14 +90,15 @@ def test_encoder_helper(encoder_helper, import_data):
         raise err
 
 
-def test_perform_feature_engineering(perform_feature_engineering, import_data):
+def test_perform_feature_engineering(perform_feature_engineering, import_data, encoder_helper, cat_vars, new_cols):
     '''
     test perform_feature_engineering
     '''
     try:
-        dataframe = import_data('./data/bank_data.csv')
+        dataframe = import_data("./data/bank_data.csv")
+        dataframe_transformed = encoder_helper(dataframe, cat_vars)
         x_train, x_test, y_train, y_test = perform_feature_engineering(
-            dataframe, new_cols=keep_cols)
+            dataframe_transformed, new_cols)
         logging.info("Testing perform_feature_engineering: SUCCESS")
     except Exception as err:
         logging.error(
@@ -109,14 +118,15 @@ def test_perform_feature_engineering(perform_feature_engineering, import_data):
         raise err
 
 
-def test_train_models(train_models, perform_feature_engineering, import_data):
+def test_train_models(train_models, perform_feature_engineering, import_data, encoder_helper, cat_vars, new_cols):
     '''
     test train_models
     '''
     try:
-        dataframe = import_data('./data/bank_data.csv')
+        dataframe = import_data("./data/bank_data.csv")
+        dataframe_transformed = encoder_helper(dataframe, cat_vars)
         X_train, X_test, y_train, y_test = perform_feature_engineering(
-            dataframe, new_cols=keep_cols)
+            dataframe_transformed, new_cols)
         train_models(X_train, X_test, y_train, y_test)
         assert os.listdir('./models') != []
         assert os.listdir('./images/results') != []
@@ -126,7 +136,11 @@ def test_train_models(train_models, perform_feature_engineering, import_data):
         logging.error(
             "Testing test_train_models: The folder is empty(perform_eda didnt ran successfully)")
         raise err
-
+    
 
 if __name__ == "__main__":
-    test_encoder_helper(cls.encoder_helper, cls.import_data)
+    test_import(cls.import_data)
+    test_eda(cls.perform_eda, cls.import_data)
+    test_encoder_helper(cls.encoder_helper, cls.import_data, cat_columns)
+    test_perform_feature_engineering(cls.perform_feature_engineering, cls.import_data, cls.encoder_helper, cat_columns, keep_cols)
+    test_train_models(cls.train_models, cls.perform_feature_engineering, cls.import_data, cls.encoder_helper, cat_columns, keep_cols)

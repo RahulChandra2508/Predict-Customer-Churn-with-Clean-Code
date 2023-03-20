@@ -44,23 +44,25 @@ Below are the functions used.
 '''
 
 # import libraries
-from constant import rfc_model_path, lr_model_path, data_path, keep_cols, cat_columns, feature_imp_path
 import os
 
-from sklearn.metrics import plot_roc_curve, classification_report
-from sklearn.model_selection import GridSearchCV
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import shap
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, plot_roc_curve
+from sklearn.model_selection import GridSearchCV, train_test_split
+
 # from sklearn.preprocessing import normalize
 
-import shap
-import joblib
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 sns.set()
+
+from constant import (cat_columns, data_path, feature_imp_path, keep_cols,
+                      lr_model_path, rfc_model_path)
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -360,21 +362,23 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = perform_feature_engineering(encoded_dataframe,
                                                                    keep_cols,
                                                                    response=None)
-
+    
+    train_models(X_train, X_test, y_train, y_test)
+    
     y_train_preds_rfc, y_train_preds_lrc, y_test_preds_rfc, y_test_preds_lrc = predict_values(random_forest_model,
                                                                                               log_reg_model,
                                                                                               X_train,
                                                                                               X_test)
 
 
-perform_eda(encoded_dataframe)
+    perform_eda(encoded_dataframe)
 
 
-classification_report_image(y_train,
+    classification_report_image(y_train,
                             y_test,
                             y_train_preds_lrc,
                             y_train_preds_rfc,
                             y_test_preds_lrc,
                             y_test_preds_rfc)
 
-feature_importance_plot(random_forest_model, X_test, feature_imp_path)
+    feature_importance_plot(random_forest_model, X_test, feature_imp_path)
